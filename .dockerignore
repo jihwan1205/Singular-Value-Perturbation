@@ -1,0 +1,8 @@
+.venv/
+.hf/
+.git/
+.pytest_cache/
+__pycache__/
+checkpoints/
+results/
+wandb/

@@ -1,0 +1,12 @@
+[project]
+name = "svp"
+version = "1.0.0"
+description = "Singular Value Perturbation: parallel test-time scaling and SVP-V-GRPO for latent reasoning models"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+[tool.setuptools.packages.find]
+include = ["svp*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+checkpoints/
+results/
+wandb/
+data/gsm_train.json
