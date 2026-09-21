@@ -313,13 +313,13 @@
 })();
 
 
-// Smooth open/close for the <details> disclosures (abstract, full table): the
+// Smooth open/close for the <details> disclosures (abstract, full table, method cards): the
 // native toggle is instant, so animate the element's height instead.
 (function () {
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduceMotion || !Element.prototype.animate) return;
 
-  document.querySelectorAll('details.svp-abstract, details.svp-fulltable').forEach(function (d) {
+  document.querySelectorAll('details.svp-abstract, details.svp-fulltable, details.svp-collapse').forEach(function (d) {
     var summary = d.querySelector('summary');
     var expanded = d.open, anim = null;
     if (!summary) return;
@@ -330,18 +330,19 @@
       var opening = expanded;
       var from = d.offsetHeight;          // mid-animation height if interrupted
       if (anim) anim.cancel();
-      if (opening) d.open = true;
-      // measure before clipping: overflow:hidden would pull child margins into the height
+      // measure the target before clipping: overflow:hidden would pull child margins in
       d.style.overflow = '';
-      var to = opening
-        ? d.offsetHeight
-        : summary.offsetHeight + parseFloat(getComputedStyle(summary).marginBottom || 0);
+      d.open = opening;
+      var to = d.offsetHeight;
+      d.open = true;                      // stay open while the height animates
+      d.classList.toggle('is-closing', !opening);
       d.style.overflow = 'hidden';
       var a = anim = d.animate({ height: [from + 'px', to + 'px'] },
                                { duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
       a.onfinish = function () {
         if (anim !== a) return;
         if (!opening) d.open = false;
+        d.classList.remove('is-closing');
         d.style.overflow = '';
         anim = null;
       };

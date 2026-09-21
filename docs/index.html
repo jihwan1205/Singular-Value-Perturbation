@@ -101,7 +101,7 @@
               <span class="link-block">
                 <a href="https://hf.co/collections/jihwan1205/svp"
                    class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon"><i class="fas fa-cube"></i></span>
+                  <span class="icon"><img class="hf-icon" src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt=""></span>
                   <span>Models</span>
                 </a>
               </span>
@@ -193,19 +193,23 @@
         </div>
 
         <div class="svp-steps">
-          <div class="svp-step">
-            <div class="svp-step-tag">Why the Value projection?</div>
+          <details class="svp-step svp-collapse">
+            <summary class="svp-step-tag">Why the Value projection?</summary>
+            <div class="svp-step-body">
             <p>Perturbing W<sub>V</sub> changes the messages attention transmits but leaves the attention
             weights untouched for a fixed input, so it still acts when attention is sharply peaked and
             query- or key-side noise loses its effect. Empirically, W<sub>V</sub> is also the most
             effective perturbation injection site among all the targets we compared.</p>
-          </div>
-          <div class="svp-step">
-            <div class="svp-step-tag">Why Gaussian coefficients?</div>
+            </div>
+          </details>
+          <details class="svp-step svp-collapse">
+            <summary class="svp-step-tag">Why Gaussian coefficients?</summary>
+            <div class="svp-step-body">
             <p>With the SVD basis fixed and the perturbation size budgeted relative to the clean
             response, multiplicative Gaussian noise on the singular values is the unique
             maximum-entropy choice: the most diverse perturbation that budget allows.</p>
-          </div>
+            </div>
+          </details>
         </div>
       </div>
     </div>
@@ -232,8 +236,9 @@
           </div>
 
           <div class="svp-steps svp-rl-steps">
-            <div class="svp-step">
-              <div class="svp-step-tag">1. Rollouts with per-trajectory noise</div>
+            <details class="svp-step svp-collapse">
+              <summary class="svp-step-tag">1. Rollouts with per-trajectory noise</summary>
+              <div class="svp-step-body">
               <p>Rollout \(j\) draws its own noise \(\varepsilon^{(j)} \sim \mathcal{N}(0, I)\), held fixed
               through prefill and every latent step; the answer is then decoded with the clean
               W<sub>V</sub> at temperature 1. Following
@@ -247,9 +252,11 @@
               <p>Following <a href="https://arxiv.org/abs/2503.14476"><strong>DAPO</strong></a>'s dynamic
               sampling, we keep only groups that contain both correct and incorrect rollouts, since the
               rest have zero advantage. SVP-V raises how often a group qualifies.</p>
-            </div>
-            <div class="svp-step">
-              <div class="svp-step-tag">2. Replay the same noise to optimize</div>
+              </div>
+            </details>
+            <details class="svp-step svp-collapse">
+              <summary class="svp-step-tag">2. Replay the same noise to optimize</summary>
+              <div class="svp-step-body">
               <p>We store \(\varepsilon^{(j)}\) with the sampled answer, replay prefill and latent
               reasoning under the same noise, and backpropagate through it to W<sub>V</sub>. The
               current, old, and reference policies all share that noise:</p>
@@ -258,7 +265,8 @@
                   \frac{\pi_\theta\big(o_{j,\tau} \mid x,\, \varepsilon^{(j)},\, o_{j,&lt;\tau}\big)}
                        {\pi_{\theta_{\mathrm{old}}}\big(o_{j,\tau} \mid x,\, \varepsilon^{(j)},\, o_{j,&lt;\tau}\big)}\]
               </div>
-            </div>
+              </div>
+            </details>
           </div>
 
           <div class="svp-bars-card">

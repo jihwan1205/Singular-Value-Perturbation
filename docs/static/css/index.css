@@ -8,6 +8,9 @@ body {
     color: #000;
 }
 
+/* Hugging Face logo in the Models button (Font Awesome has no HF glyph) */
+.link-block .hf-icon { width: 1.35em; height: 1.35em; max-height: none; }
+
 .link-block .button {
     margin-top: 5px;
     margin-bottom: 5px;
@@ -568,6 +571,7 @@ table.svp-table tbody tr:last-child td {
   .svp-vbars .bar { transition: none; }
   .svp-vbars .vbar-col, .svp-vbars .vbar-col.is-collapsed,
   .svp-vbars .bar-label, .svp-bars-legend .legend-ablation { transition: none; }
+  .svp-collapse > summary::after { transition: none; }
   .svp-vbars .vbar-col { animation: none; }
   #cov-table tbody.is-entering { animation: none; }
 }
@@ -709,10 +713,38 @@ svg.is-playing .bt-node { opacity: 1; }
   color: #363636;
 }
 
+/* collapsible cards: the red title is the toggle, the body opens underneath */
+.svp-steps { align-items: start; }
+.svp-collapse > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.svp-collapse > summary::-webkit-details-marker { display: none; }
+.svp-collapse > summary::after {
+  content: "";
+  flex: none;
+  width: 0.5em;
+  height: 0.5em;
+  margin-right: 0.2em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-25%) rotate(45deg);
+  transition: transform 0.3s ease;
+}
+.svp-collapse[open]:not(.is-closing) > summary::after { transform: translateY(15%) rotate(-135deg); }
+.svp-collapse > summary:focus-visible { outline: 2px solid #c62828; outline-offset: 4px; border-radius: 4px; }
+.svp-step-body { margin-top: 0.35rem; }
+
 /* the RL section sits on a light-grey hero, so its cards need a white fill */
 .svp-rl-steps { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 .svp-rl-steps .svp-step { background: #fff; border-color: transparent; }
-.svp-rl-steps .svp-step-eq:last-child { margin-bottom: 0.2rem; }
+.svp-rl-steps .svp-step-body > .svp-step-eq:last-child { margin-bottom: 0.2rem; }
 
 .svp-step-tag {
   font-family: 'Google Sans', sans-serif;
