@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Singular Value Perturbation (SVP) diversifies latent reasoning trajectories by rescaling singular values of the attention Value projection, expanding test-time solution coverage and unlocking RL post-training of continuous latent reasoning models.">
+  <meta name="keywords" content="SVP, Singular Value Perturbation, latent reasoning, COCONUT, CoDi, GRPO, test-time scaling">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SVP: Singular Value Perturbation</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/favicon.svg">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  <script defer src="./static/js/svp.js"></script>
+  <script defer src="./static/js/mechanism.js"></script>
+
+  <script>
+    window.MathJax = {
+      tex: {inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']]},
+      options: {skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']}
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
+       aria-controls="nav-menu" tabindex="0">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu" id="nav-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+      <a class="navbar-item" href="#overview">Overview</a>
+      <a class="navbar-item" href="#method">Method</a>
+      <a class="navbar-item" href="#rl">SVP-V-GRPO</a>
+      <a class="navbar-item" href="#coverage">Coverage</a>
+      <a class="navbar-item" href="#branching">Branching</a>
+      <a class="navbar-item" href="#BibTeX">BibTeX</a>
+    </div>
+  </div>
+</nav>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">
+            <span class="svp-mark">Singular Value Perturbation</span><br>
+            <span style="font-size: 0.62em; line-height: 1.3;">Unlocking RL Performance via Diverse Latent Reasoning</span>
+          </h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><a href="https://jihwan1205.github.io/" class="author-self"><strong>Jihwan Shin</strong></a><sup>1</sup></span>,
+            <span class="author-block"><a href="https://www.linkedin.com/in/daliri-majid/">Majid Daliri</a><sup>2</sup></span>,
+            <span class="author-block"><a href="https://research.google/people/mirrokni/">Vahab Mirrokni</a><sup>3</sup></span>,
+            <span class="author-block"><a href="https://www.linkedin.com/in/amir-zandieh-323a13a9/">Amir Zandieh</a><sup>3</sup></span>,
+            <span class="author-block"><a href="https://insuhan.github.io/">Insu Han</a><sup>1</sup></span>
+          </div>
+
+          <div class="is-size-6 publication-authors publication-affiliations">
+            <span class="author-block"><sup>1</sup>KAIST</span>,
+            <span class="author-block"><sup>2</sup>New York University</span>,
+            <span class="author-block"><sup>3</sup>Google</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <span class="link-block">
+                <!-- TODO: once the arXiv link exists, point Paper at it and turn this back into
+                     <a href="URL" class="external-link button is-normal is-rounded is-dark"> -->
+                <span class="external-link button is-normal is-rounded is-dark is-pending"
+                      aria-disabled="true">
+                  <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                  <span>Paper <span class="pending-tag">soon</span></span>
+                </span>
+              </span>
+              <span class="link-block">
+                <a href="https://github.com/jihwan1205/Singular-Value-Perturbation"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://hf.co/collections/jihwan1205/svp"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-cube"></i></span>
+                  <span>Models</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="overview" style="padding-top: 1rem; padding-bottom: 1rem;">
+  <div class="container is-max-desktop">
+    <p class="svp-tldr">
+      Latent reasoning models cannot explore, so RL cannot improve them.<br>
+      <span class="svp-accent">SVP</span> fixes that by injecting structured randomness in the weights.
+    </p>
+
+    <div class="svp-overview">
+      <div class="ov-card">
+        <h3 class="ov-title">Deterministic latent reasoning</h3>
+        <svg class="ov-fig" viewBox="0 0 240 90" role="img" aria-label="Sixteen runs all follow one reasoning path">
+          <circle cx="16" cy="45" r="6" class="ov-start"/><path id="ov-p" d="M22 45 L214 45" class="ov-line"/><circle cx="220" cy="45" r="5" class="ov-end"/><circle r="3.5" class="ov-dot"><animateMotion dur="2.4s" begin="-0.0s" repeatCount="indefinite"><mpath href="#ov-p"/></animateMotion></circle><circle r="3.5" class="ov-dot"><animateMotion dur="2.4s" begin="-0.8s" repeatCount="indefinite"><mpath href="#ov-p"/></animateMotion></circle><circle r="3.5" class="ov-dot"><animateMotion dur="2.4s" begin="-1.6s" repeatCount="indefinite"><mpath href="#ov-p"/></animateMotion></circle>
+        </svg>
+        <div class="ov-figcap">16 runs, 1 reasoning path</div>
+        <p>Latent reasoning has no randomness, so RL has no differing rollouts to compare.</p>
+      </div>
+
+      <div class="ov-card">
+        <h3 class="ov-title">Put structured noise in weights</h3>
+        <svg class="ov-fig" viewBox="0 0 240 90" role="img" aria-label="With SVP-V, sixteen runs fan out into diverse reasoning paths, some of them correct">
+          <circle cx="16" cy="45" r="6" class="ov-start"/><path id="ov-p0" d="M22 45 C90 45 130 12 214 12" class="ov-line ov-green"/><circle cx="220" cy="12" r="5" class="ov-end"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-0.00s" repeatCount="indefinite"><mpath href="#ov-p0"/></animateMotion></circle><path id="ov-p1" d="M22 45 C90 45 130 28 214 28" class="ov-line ov-green"/><circle cx="220" cy="28" r="5" class="ov-end-ok"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-0.35s" repeatCount="indefinite"><mpath href="#ov-p1"/></animateMotion></circle><path id="ov-p2" d="M22 45 C90 45 130 45 214 45" class="ov-line ov-green"/><circle cx="220" cy="45" r="5" class="ov-end"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-0.70s" repeatCount="indefinite"><mpath href="#ov-p2"/></animateMotion></circle><path id="ov-p3" d="M22 45 C90 45 130 62 214 62" class="ov-line ov-green"/><circle cx="220" cy="62" r="5" class="ov-end-ok"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-1.05s" repeatCount="indefinite"><mpath href="#ov-p3"/></animateMotion></circle><path id="ov-p4" d="M22 45 C90 45 130 78 214 78" class="ov-line ov-green"/><circle cx="220" cy="78" r="5" class="ov-end"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-1.40s" repeatCount="indefinite"><mpath href="#ov-p4"/></animateMotion></circle>
+        </svg>
+        <div class="ov-figcap">16 runs, diverse paths</div>
+        <p><strong>SVP-V</strong> rescales the singular values of the attention Value projection with Gaussian noise, so every trajectory reasons differently.</p>
+      </div>
+
+      <div class="ov-card">
+        <h3 class="ov-title">Exploration that RL can use</h3>
+        <div class="ov-fig ov-bars" role="img" aria-label="GSM8K accuracy: COCONUT 34.1 percent, SVP-V-GRPO 50.3 percent">
+          <div class="ov-bar"><span>34.1%</span><i style="height: 22%"></i><em>COCONUT</em></div>
+          <div class="ov-bar is-ours"><span>50.3%</span><i style="height: 70%"></i><em>+ SVP-V-GRPO</em></div>
+        </div>
+        <div class="ov-figcap">GSM8K accuracy</div>
+        <p><strong>SVP-V-GRPO</strong> achieves state-of-the-art performance among continuous LRMs.</p>
+      </div>
+    </div>
+
+    <details class="svp-abstract">
+      <summary>Read the full abstract</summary>
+      <div class="content has-text-justified">
+          <p>Latent Reasoning Models (LRMs) replace explicit chain-of-thought tokens with continuous recurrent computation, but that recurrence is deterministic: sampling answer tokens cannot explore alternative computations inside the latent reasoning phase, which limits the exploration reinforcement learning needs. <strong>Singular-Value Perturbation (SVP)</strong> diversifies latent trajectories by randomly rescaling coefficients in the fixed SVD basis of a weight matrix. Applied to attention Value projections (<strong>SVP-V</strong>), it perturbs the messages attention transmits while preserving the attention weights for a fixed input.</p>
+          <p>Across multiple LRMs and mathematical reasoning benchmarks, SVP-based configurations achieve the highest solution coverage in every evaluated setting, and intermediate LM-head readouts reveal semantic branching around decision-critical steps. Building on this, <strong>SVP-V-GRPO</strong> learns from the relative outcomes of perturbed trajectories while updating only the Value parameters: starting from COCONUT, it improves GSM8K accuracy from 34.1% to 50.3% and achieves state-of-the-art performance on all six benchmarks among released GPT-2-based continuous LRMs.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+
+<section class="section" id="method" style="padding-top: 1.5rem;">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3">Method</h2>
+
+        <div class="svp-figure svp-mech">
+          <div id="mech-fig">
+          </div>
+        </div>
+        <div class="svp-mech-foot"><button type="button" id="mech-replay">&#8635; Replay</button></div>
+        <p class="svp-caption has-text-centered" style="margin-bottom: 1.6rem;">
+          Latent reasoning models think in hidden states, and that recurrence is deterministic.
+          <span class="svp-accent">SVP</span> introduces structured randomness in the <em>weights</em> by
+          rescaling the singular values of the attention Value projection.
+        </p>
+
+        <div class="svp-step svp-step-main">
+          <div class="svp-step-tag">SVP-V</div>
+          <p>Decompose the Value projection once, W<sub>V</sub> = UΣR<sup>⊤</sup>. For each trajectory,
+          draw Gaussian noise ε and rescale only the singular values; U and R<sup>⊤</sup> never move.
+          The draw is held fixed through prefill and every latent step, so each trajectory reasons with
+          its own W&#771;<sub>V</sub>.</p>
+          <div class="svp-step-eq">
+            \[s_i \;\longmapsto\; s_i(1+\alpha\varepsilon_i), \qquad \varepsilon_i \sim \mathcal{N}(0,1)\]
+          </div>
+          <p class="eq-caption">The only hyperparameter is \(\alpha\): the RMS size of the perturbation
+          relative to the clean response, the same for every input.</p>
+        </div>
+
+        <div class="svp-steps">
+          <div class="svp-step">
+            <div class="svp-step-tag">Why the Value projection?</div>
+            <p>Perturbing W<sub>V</sub> changes the messages attention transmits but leaves the attention
+            weights untouched for a fixed input, so it still acts when attention is sharply peaked and
+            query- or key-side noise loses its effect. Empirically, W<sub>V</sub> is the best location in
+            9 of 12 structure-controlled comparisons, including all six under SVP.</p>
+          </div>
+          <div class="svp-step">
+            <div class="svp-step-tag">Why Gaussian coefficients?</div>
+            <p>With the SVD basis fixed and the perturbation size budgeted relative to the clean
+            response, multiplicative Gaussian noise on the singular values is the unique
+            maximum-entropy choice: the most diverse perturbation that budget allows.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="hero is-light" id="rl">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column is-full-width">
+          <h2 class="title is-3">SVP-V-GRPO: exploration that unlocks RL</h2>
+
+          <div class="content has-text-justified">
+            <p>
+              RL needs rollouts that differ, and a deterministic latent recurrence gives it none.
+              SVP-V-GRPO samples each rollout with its own SVP-V draw, learns from the relative outcomes
+              of those perturbed trajectories, and updates only the attention Value projections (about
+              5.7% of the parameters). <strong>All accuracies below are measured with the perturbation
+              switched off</strong>: the exploration is only needed during training, and the gain stays
+              in the clean model.
+            </p>
+          </div>
+
+          <div class="svp-bars-card">
+            <div class="svp-toggle" id="rl-toggle" role="tablist" aria-label="Benchmark"></div>
+            <div class="svp-vbars" id="rl-bars" aria-live="polite"></div>
+            <p class="svp-axis-note" id="rl-axis-note"></p>
+            <div class="svp-bars-legend">
+              <span><i class="sw sw-released"></i>Released checkpoint</span>
+              <span class="legend-ablation"><i class="sw sw-grpo"></i>GRPO control (ours, matched recipe)</span>
+              <span><i class="sw sw-ours"></i>SVP-V-GRPO</span>
+            </div>
+            <div class="svp-ablation-toggle">
+              <button type="button" id="rl-ablation" aria-pressed="false" aria-controls="rl-bars">
+                <span class="ablation-verb">Show</span> GRPO ablation (Temp / Gaussian-V / Dropout)
+              </button>
+            </div>
+          </div>
+          <p class="svp-caption" style="margin-bottom: 1.2rem;">
+            Accuracy of released GPT-2-based latent reasoning models and SVP-V-GRPO; pick a benchmark
+            above. The ablation button adds the three GRPO controls (striped) that we trained from the same
+            COCONUT checkpoint under one matched recipe, differing only in the exploration mechanism.
+          </p>
+
+<details class="svp-fulltable">
+<summary>Full table (all benchmarks)</summary>
+<div class="svp-table-wrap"><table class="svp-table" id="rl-table"><thead><tr><th>Model</th><th>GSM8K</th><th>GSM-Hard</th><th>MultiArith</th><th>SVAMP</th><th>ASDiv-A</th><th>GSM-Plus</th><th>Mean</th></tr></thead><tbody><tr class="group-head"><td colspan="8">Released checkpoints</td></tr>
+<tr><td>COCONUT (baseline checkpoint)</td><td>34.1</td><td>7.7</td><td>80.9</td><td>35.6</td><td>60.2</td><td>17.4</td><td>39.3</td></tr>
+<tr><td>SLPO</td><td>34.9</td><td>7.6</td><td>82.8</td><td>34.3</td><td>58.7</td><td>18.2</td><td>39.4</td></tr>
+<tr><td>SIM-CoT</td><td>44.7</td><td>9.3</td><td>90.5</td><td>40.6</td><td>67.2</td><td>21.5</td><td>45.6</td></tr>
+<tr><td>CoDi</td><td>42.5</td><td>9.3</td><td>91.9</td><td>40.0</td><td>65.4</td><td>23.1</td><td>45.4</td></tr>
+<tr class="group-head"><td colspan="8">GRPO from the same COCONUT checkpoint, matched recipe</td></tr>
+<tr><td>Temp-GRPO</td><td>38.4</td><td>8.7</td><td>85.3</td><td>37.1</td><td>61.5</td><td>19.8</td><td>41.8</td></tr>
+<tr><td>Gaussian-V-GRPO</td><td>40.6</td><td>9.0</td><td>88.6</td><td>39.1</td><td>62.7</td><td>21.9</td><td>43.7</td></tr>
+<tr><td>Dropout-GRPO</td><td>45.2</td><td>9.3</td><td>90.9</td><td class="best">44.6</td><td>71.1</td><td>24.8</td><td>47.7</td></tr>
+<tr class="ours"><td>SVP-V-GRPO (Ours)</td><td class="best">50.3</td><td class="best">11.3</td><td class="best">93.4</td><td>43.6</td><td class="best">71.2</td><td class="best">27.6</td><td class="best">49.6</td></tr></tbody></table></div>
+</details>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="coverage">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3">Why it works: SVP-V is good exploration</h2>
+        <div class="content has-text-justified">
+          <p>The RL gain rests on one claim: SVP-V makes latent trajectories differ in ways that matter.
+          Two pieces of evidence, both measured at test time without any training.</p>
+        </div>
+
+        <h3 class="title is-4"><span class="svp-evidence">Evidence 1</span>Test-time solution coverage</h3>
+        <div class="content has-text-justified">
+          <p>If the exploration is useful, sampling with it should uncover more distinct correct
+          solutions. It does: an SVP-based configuration has the best pass@16 in all 18 model-benchmark
+          settings, matching or beating answer-token sampling and unstructured Gaussian noise on
+          activations or weights everywhere.</p>
+        </div>
+
+<div class="svp-toggle" id="cov-toggle" role="tablist" aria-label="Model">
+  <button type="button" role="tab" data-model="0" aria-selected="true" class="is-active">COCONUT-GPT2</button>
+  <button type="button" role="tab" data-model="1" aria-selected="false">CoDi-GPT2</button>
+  <button type="button" role="tab" data-model="2" aria-selected="false">CoDi-LLaMA-1B</button>
+</div>
+<div class="svp-table-wrap"><table class="svp-table" id="cov-table"><thead><tr><th>Method</th><th>GSM8K</th><th>GSM-Hard</th><th>MultiArith</th><th>SVAMP</th><th>ASDiv-A</th><th>GSM-Plus</th></tr></thead>
+<tbody data-model="0">
+<tr><td>Deterministic</td><td>34.12</td><td>7.66</td><td>80.86</td><td>35.60</td><td>60.18</td><td>17.38</td></tr>
+<tr><td>Top-p</td><td>53.76 <span style="color:#aaa">±</span> 0.24</td><td>12.44 <span style="color:#aaa">±</span> 0.08</td><td>88.53 <span style="color:#aaa">±</span> 0.43</td><td>49.97 <span style="color:#aaa">±</span> 0.33</td><td>72.58 <span style="color:#aaa">±</span> 0.37</td><td>38.95 <span style="color:#aaa">±</span> 0.34</td></tr>
+<tr><td>Gaussian &times; Activation</td><td>54.25 <span style="color:#aaa">±</span> 0.16</td><td>12.69 <span style="color:#aaa">±</span> 0.13</td><td>93.41 <span style="color:#aaa">±</span> 0.12</td><td>50.45 <span style="color:#aaa">±</span> 0.28</td><td>72.57 <span style="color:#aaa">±</span> 0.28</td><td>36.43 <span style="color:#aaa">±</span> 0.21</td></tr>
+<tr><td>SVP &times; Activation</td><td>54.90 <span style="color:#aaa">±</span> 0.18</td><td>13.10 <span style="color:#aaa">±</span> 0.13</td><td>93.34 <span style="color:#aaa">±</span> 0.30</td><td>52.86 <span style="color:#aaa">±</span> 0.40</td><td>73.81 <span style="color:#aaa">±</span> 0.14</td><td>37.56 <span style="color:#aaa">±</span> 0.16</td></tr>
+<tr><td>Gaussian &times; W<sub>V</sub></td><td>55.98 <span style="color:#aaa">±</span> 0.25</td><td>13.59 <span style="color:#aaa">±</span> 0.28</td><td>93.46 <span style="color:#aaa">±</span> 0.29</td><td>51.68 <span style="color:#aaa">±</span> 0.41</td><td>74.13 <span style="color:#aaa">±</span> 0.18</td><td>39.16 <span style="color:#aaa">±</span> 0.30</td></tr>
+<tr class="ours"><td>SVP &times; W<sub>V</sub> (SVP-V)</td><td class="best">57.22 <span style="color:#aaa">±</span> 0.48</td><td class="best">13.90 <span style="color:#aaa">±</span> 0.12</td><td class="best">93.60 <span style="color:#aaa">±</span> 0.07</td><td class="best">53.45 <span style="color:#aaa">±</span> 0.38</td><td class="best">74.87 <span style="color:#aaa">±</span> 0.30</td><td class="best">40.05 <span style="color:#aaa">±</span> 0.34</td></tr>
+</tbody>
+<tbody data-model="1" hidden>
+<tr><td>Deterministic</td><td>42.46</td><td>9.26</td><td>91.90</td><td>40.00</td><td>65.44</td><td>23.10</td></tr>
+<tr><td>Top-p</td><td>59.66 <span style="color:#aaa">±</span> 0.38</td><td>13.35 <span style="color:#aaa">±</span> 0.13</td><td>95.97 <span style="color:#aaa">±</span> 0.13</td><td>52.81 <span style="color:#aaa">±</span> 0.29</td><td>77.11 <span style="color:#aaa">±</span> 0.29</td><td>42.08 <span style="color:#aaa">±</span> 0.23</td></tr>
+<tr><td>Gaussian &times; Activation</td><td>53.20 <span style="color:#aaa">±</span> 0.09</td><td>12.13 <span style="color:#aaa">±</span> 0.08</td><td>97.23 <span style="color:#aaa">±</span> 0.19</td><td>50.38 <span style="color:#aaa">±</span> 0.29</td><td>76.41 <span style="color:#aaa">±</span> 0.09</td><td>33.69 <span style="color:#aaa">±</span> 0.12</td></tr>
+<tr><td>SVP &times; Activation</td><td>58.47 <span style="color:#aaa">±</span> 0.33</td><td>13.98 <span style="color:#aaa">±</span> 0.07</td><td>98.03 <span style="color:#aaa">±</span> 0.15</td><td class="best">57.73 <span style="color:#aaa">±</span> 0.31</td><td class="best">80.47 <span style="color:#aaa">±</span> 0.13</td><td>41.20 <span style="color:#aaa">±</span> 0.26</td></tr>
+<tr><td>Gaussian &times; W<sub>V</sub></td><td>59.35 <span style="color:#aaa">±</span> 0.35</td><td>13.89 <span style="color:#aaa">±</span> 0.17</td><td>98.44 <span style="color:#aaa">±</span> 0.10</td><td>54.04 <span style="color:#aaa">±</span> 0.32</td><td>78.50 <span style="color:#aaa">±</span> 0.16</td><td>42.09 <span style="color:#aaa">±</span> 0.21</td></tr>
+<tr class="ours"><td>SVP &times; W<sub>V</sub> (SVP-V)</td><td class="best">61.09 <span style="color:#aaa">±</span> 0.26</td><td class="best">14.38 <span style="color:#aaa">±</span> 0.26</td><td class="best">98.72 <span style="color:#aaa">±</span> 0.07</td><td>56.14 <span style="color:#aaa">±</span> 0.31</td><td>79.99 <span style="color:#aaa">±</span> 0.35</td><td class="best">43.76 <span style="color:#aaa">±</span> 0.26</td></tr>
+</tbody>
+<tbody data-model="2" hidden>
+<tr><td>Deterministic</td><td>55.57</td><td>12.82</td><td>95.34</td><td>60.80</td><td>88.01</td><td>33.95</td></tr>
+<tr><td>Top-p</td><td>68.01 <span style="color:#aaa">±</span> 0.23</td><td>16.35 <span style="color:#aaa">±</span> 0.14</td><td>97.32 <span style="color:#aaa">±</span> 0.08</td><td>69.86 <span style="color:#aaa">±</span> 0.25</td><td>93.31 <span style="color:#aaa">±</span> 0.09</td><td>49.96 <span style="color:#aaa">±</span> 0.23</td></tr>
+<tr><td>Gaussian &times; Activation</td><td>65.30 <span style="color:#aaa">±</span> 0.10</td><td>15.43 <span style="color:#aaa">±</span> 0.14</td><td>97.79 <span style="color:#aaa">±</span> 0.04</td><td>68.24 <span style="color:#aaa">±</span> 0.23</td><td>93.38 <span style="color:#aaa">±</span> 0.05</td><td>44.98 <span style="color:#aaa">±</span> 0.11</td></tr>
+<tr><td>SVP &times; Activation</td><td>69.51 <span style="color:#aaa">±</span> 0.21</td><td class="best">17.02 <span style="color:#aaa">±</span> 0.16</td><td>98.62 <span style="color:#aaa">±</span> 0.08</td><td class="best">74.00 <span style="color:#aaa">±</span> 0.27</td><td class="best">94.44 <span style="color:#aaa">±</span> 0.07</td><td>50.92 <span style="color:#aaa">±</span> 0.18</td></tr>
+<tr><td>Gaussian &times; W<sub>V</sub></td><td>70.14 <span style="color:#aaa">±</span> 0.28</td><td>16.68 <span style="color:#aaa">±</span> 0.08</td><td class="best">98.78 <span style="color:#aaa">±</span> 0.07</td><td>72.86 <span style="color:#aaa">±</span> 0.14</td><td>94.43 <span style="color:#aaa">±</span> 0.10</td><td>51.96 <span style="color:#aaa">±</span> 0.12</td></tr>
+<tr class="ours"><td>SVP &times; W<sub>V</sub> (SVP-V)</td><td class="best">70.29 <span style="color:#aaa">±</span> 0.35</td><td>16.72 <span style="color:#aaa">±</span> 0.10</td><td class="best">98.78 <span style="color:#aaa">±</span> 0.05</td><td>73.24 <span style="color:#aaa">±</span> 0.28</td><td>94.39 <span style="color:#aaa">±</span> 0.09</td><td class="best">52.25 <span style="color:#aaa">±</span> 0.13</td></tr>
+</tbody>
+</table></div>
+<p class="svp-note">Unbiased pass@16 (%), five-seed mean &plusmn; std, 64 samples per prompt. Bold = best per benchmark for the selected model. Hyperparameters were selected once on a 1,024-problem GSM8K training subset and then held fixed across all six benchmarks. <em>Deterministic</em> is a single greedy run and has no seed variance.</p>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="branching" style="padding-top: 0;">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h3 class="title is-4"><span class="svp-evidence">Evidence 2</span>Semantic branching at the decision-critical step</h3>
+        <div class="content has-text-justified">
+          <p>Reading the latent states through the LM head shows <em>where</em> trajectories differ.
+          SVP-V does not scatter them everywhere: they agree on the easy steps and branch at the one
+          step the clean model gets wrong. There, the correct intermediate value becomes the most common
+          branch, and only SVP-V trajectories go on to the correct answer.</p>
+        </div>
+
+        <div class="svp-branch-card">
+          <div class="svp-branch-problem">
+            <span class="bt-tag">GSM8K-test #334</span><br>
+            Nick, Richard, Jason and DJ each have paintball guns. DJ has 8 guns, Nick has 10 guns, RJ has
+            1 gun and Richard has 5 guns. If they were to share their guns equally, how many guns would
+            each of them have?
+            <div class="bt-solution">8 + 10 + 1 + 5 = <b>24</b> &nbsp;&middot;&nbsp; 24 &divide; <b>4</b> = <b>6</b></div>
+          </div>
+
+          <div class="svp-toggle" id="branch-toggle" role="tablist" aria-label="Sampling method">
+            <button type="button" role="tab" data-method="det" aria-selected="false">Deterministic</button>
+            <button type="button" role="tab" data-method="agn" aria-selected="false">Activation-Gaussian</button>
+            <button type="button" role="tab" data-method="svp" aria-selected="true" class="is-active">SVP-V</button>
+          </div>
+
+          <div id="branch-tree" aria-live="polite">
+          </div>
+
+          <div class="svp-branch-stats">
+            <span><b id="bt-stat-distinct">0</b>distinct readouts at h<sub>1</sub></span>
+            <span><b id="bt-stat-total">0</b>read the correct total 24</span>
+            <span><b id="bt-stat-correct">0</b>reach the correct answer 6</span>
+          </div>
+
+          <div class="svp-branch-foot">
+            <div>
+              <span><i class="sw sw-gold"></i>value on the correct solution path</span>
+              <span><i class="sw sw-ok"></i>darker route = contains a correct trajectory</span>
+              <span>line width = number of trajectories</span>
+            </div>
+            <button type="button" id="branch-replay">&#8635; Replay</button>
+          </div>
+        </div>
+        <p class="svp-caption">
+          LM-head top-1 readouts of the latent trajectories on one GSM8K problem, at latent depths
+          h<sub>0</sub>, h<sub>1</sub>, h<sub>3</sub> and h<sub>6</sub>; switch between a single
+          deterministic run, 16 activation-Gaussian samples and 16 SVP-V samples. Trajectories agree at
+          h<sub>0</sub> and re-converge at h<sub>3</sub>; the branching happens at h<sub>1</sub>, the step
+          the clean model gets wrong, and only SVP-V branches reach the correct answer.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@article{shin2026svp,
+  title         = {Singular Value Perturbation: Unlocking {RL} Performance via Diverse Latent Reasoning},
+  author        = {Shin, Jihwan and Daliri, Majid and Mirrokni, Vahab and Zandieh, Amir and Han, Insu},
+  journal       = {arXiv preprint arXiv:XXXX.XXXXX},
+  year          = {2026},
+  eprint        = {XXXX.XXXXX},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/XXXX.XXXXX}
+}</code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link external-link" href="https://github.com/jihwan1205/Singular-Value-Perturbation"
+         aria-label="SVP code on GitHub">
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is licensed under a <a rel="license"
+              href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons
+              Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p>
+            It borrows the <a href="https://github.com/nerfies/nerfies.github.io">source code</a> of the
+            <a href="https://nerfies.github.io/">Nerfies</a> project page. We thank the authors for
+            sharing it.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
