@@ -41,7 +41,7 @@
   var card = barsEl.closest('.svp-bars-card');
   var axisNote = document.getElementById('rl-axis-note');
   var rows = [];
-  var inGrpo = false, started = false, current = 0, showAblation = false;
+  var inGrpo = false, started = false, current = 0, showAblation = false, toggleTimer;
 
   // Columns: released checkpoints + SVP-V-GRPO by default; the matched GRPO
   // controls (ablation) are revealed by the button.
@@ -56,7 +56,9 @@
 
     var el = document.createElement('div');
     el.className = 'vbar-col' + (ours ? ' is-ours' : inGrpo ? ' is-grpo' : '');
-    el.hidden = row.ablation;
+    // ablation columns stay in the layout, folded to zero width, so they can animate
+    el.classList.toggle('is-collapsed', row.ablation);
+    if (row.ablation) el.setAttribute('aria-hidden', 'true');
     el.innerHTML = '<div class="vbar-plot">' +
       '<span class="bar-value">0.0</span><div class="bar"></div></div><div class="bar-label"></div>';
     el.querySelector('.bar-label').textContent = cells[0].textContent.replace(/\s*\(.*\)/, '');
@@ -85,7 +87,7 @@
   function render(i) {
     current = i;
     if (!started) return;
-    var visible = rows.filter(function (r) { return !r.el.hidden; });
+    var visible = rows.filter(function (r) { return showAblation || !r.ablation; });
     // Common scale over all eight rows, so revealing the ablation never rescales the
     // bars. The axis is truncated (it starts a sixth of the data range below the
     // lowest value) to make the differences legible; the break is drawn and stated.
@@ -110,13 +112,20 @@
       ablationBtn.classList.toggle('is-active', showAblation);
       ablationBtn.querySelector('.ablation-verb').textContent = showAblation ? 'Hide' : 'Show';
       card.classList.toggle('show-ablation', showAblation);
+      // hold the labels on one line while the columns are mid-fold
+      card.classList.add('is-toggling');
+      clearTimeout(toggleTimer);
+      toggleTimer = setTimeout(function () { card.classList.remove('is-toggling'); }, 550);
       rows.forEach(function (r) {
         if (!r.ablation) return;
-        r.el.hidden = !showAblation;
-        r.bar.style.height = '0';   // grow from zero each time they are revealed
-        r.shown = 0;
+        r.el.classList.toggle('is-collapsed', !showAblation);
+        r.el.setAttribute('aria-hidden', !showAblation);
+        if (!showAblation) {        // sink back to the axis while folding away
+          cancelAnimationFrame(r.raf);
+          r.bar.style.height = '0';
+          r.shown = 0;
+        }
       });
-      barsEl.offsetHeight;          // flush, so the height transition runs
       render(current);
     });
   }
@@ -301,4 +310,41 @@
   } else {
     started = true; play();
   }
+})();
+
+
+// Smooth open/close for the <details> disclosures (abstract, full table): the
+// native toggle is instant, so animate the element's height instead.
+(function () {
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion || !Element.prototype.animate) return;
+
+  document.querySelectorAll('details.svp-abstract, details.svp-fulltable').forEach(function (d) {
+    var summary = d.querySelector('summary');
+    var expanded = d.open, anim = null;
+    if (!summary) return;
+
+    summary.addEventListener('click', function (e) {
+      e.preventDefault();
+      expanded = !expanded;
+      var opening = expanded;
+      var from = d.offsetHeight;          // mid-animation height if interrupted
+      if (anim) anim.cancel();
+      if (opening) d.open = true;
+      // measure before clipping: overflow:hidden would pull child margins into the height
+      d.style.overflow = '';
+      var to = opening
+        ? d.offsetHeight
+        : summary.offsetHeight + parseFloat(getComputedStyle(summary).marginBottom || 0);
+      d.style.overflow = 'hidden';
+      var a = anim = d.animate({ height: [from + 'px', to + 'px'] },
+                               { duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+      a.onfinish = function () {
+        if (anim !== a) return;
+        if (!opening) d.open = false;
+        d.style.overflow = '';
+        anim = null;
+      };
+    });
+  });
 })();

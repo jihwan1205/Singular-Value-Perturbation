@@ -8,7 +8,7 @@ body {
     color: #000;
 }
 
-.link-block a {
+.link-block .button {
     margin-top: 5px;
     margin-bottom: 5px;
 }
@@ -74,9 +74,8 @@ body {
    color: #111 !important;   /* author links read as plain names; underline on hover */
 }
 
-/* first author: black bold, still a link */
-.publication-authors a.author-self,
-.publication-authors a.author-self strong {
+/* first author: black, still a link */
+.publication-authors a.author-self {
   color: #111 !important;
 }
 
@@ -393,18 +392,35 @@ table.svp-table tbody tr:last-child td {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 0.5rem;
 }
 
+/* spacing is a margin, not a flex gap, so a collapsing column can take its spacing with it */
 .svp-vbars .vbar-col {
   flex: 1 1 0;
   max-width: 6.5rem;
   min-width: 0;
+  margin: 0 0.25rem;
   text-align: center;
   animation: svp-fade 0.3s ease;
+  transition: flex-grow 0.5s ease, max-width 0.5s ease, margin 0.5s ease,
+              opacity 0.35s ease, visibility 0s;
 }
 
-.svp-vbars .vbar-col[hidden] { display: none; }
+/* ablation columns fold away instead of popping out, so the other bars slide */
+.svp-vbars .vbar-col.is-collapsed {
+  flex-grow: 0;
+  max-width: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: flex-grow 0.5s ease, max-width 0.5s ease, margin 0.5s ease,
+              opacity 0.35s ease, visibility 0s 0.5s;
+}
+
+/* a folding column is too narrow for its label: keep it on one line so the row height holds */
+.svp-vbars .vbar-col.is-collapsed .bar-label,
+.is-toggling .svp-vbars .is-grpo .bar-label { white-space: nowrap; overflow-wrap: normal; }
 
 .svp-vbars .vbar-plot {
   height: 15rem;
@@ -463,9 +479,19 @@ table.svp-table tbody tr:last-child td {
   line-height: 1.2;
   color: #363636;
   overflow-wrap: anywhere;
+  transition: font-size 0.5s ease;
 }
 
 .svp-vbars .is-ours .bar-label { font-weight: 600; color: #c62828; }
+
+/* eight bars with the ablation shown: shrink the labels so each stays on one line */
+@media (min-width: 601px) {
+  .show-ablation .svp-vbars .bar-label {
+    font-size: 0.62rem;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+}
 
 .svp-ablation-toggle { text-align: center; margin-top: 0.9rem; }
 
@@ -484,14 +510,30 @@ table.svp-table tbody tr:last-child td {
 .svp-ablation-toggle button.is-active { background: #fdecea; }
 .svp-ablation-toggle button:focus-visible { outline: 2px solid #c62828; outline-offset: 2px; }
 
-.svp-bars-legend .legend-ablation { display: none; }
-.show-ablation .svp-bars-legend .legend-ablation { display: inline; }
+.svp-bars-legend > span { margin: 0 0.55rem; white-space: nowrap; }
+
+.svp-bars-legend .legend-ablation {
+  display: inline-block;
+  max-width: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: max-width 0.5s ease, margin 0.5s ease, opacity 0.35s ease, visibility 0s 0.5s;
+}
+.show-ablation .svp-bars-legend .legend-ablation {
+  max-width: 17rem;
+  margin: 0 0.55rem;
+  opacity: 1;
+  visibility: visible;
+  transition: max-width 0.5s ease, margin 0.5s ease, opacity 0.35s ease, visibility 0s;
+}
 
 .svp-bars-legend {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.3rem 1.1rem;
+  row-gap: 0.3rem;
   margin-top: 0.8rem;
   font-size: 0.75rem;
   color: #666;
@@ -514,7 +556,8 @@ table.svp-table tbody tr:last-child td {
 .svp-fulltable summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.6rem; }
 
 @media (max-width: 600px) {
-  .svp-vbars { gap: 0.2rem; }
+  .svp-vbars .vbar-col { margin: 0 0.1rem; }
+  .svp-vbars .vbar-col.is-collapsed { margin: 0; }
   .svp-vbars .vbar-plot { height: 12rem; }
   .svp-vbars .bar { width: 80%; }
   .svp-vbars .bar-value { font-size: 0.72rem; }
@@ -523,6 +566,8 @@ table.svp-table tbody tr:last-child td {
 
 @media (prefers-reduced-motion: reduce) {
   .svp-vbars .bar { transition: none; }
+  .svp-vbars .vbar-col, .svp-vbars .vbar-col.is-collapsed,
+  .svp-vbars .bar-label, .svp-bars-legend .legend-ablation { transition: none; }
   .svp-vbars .vbar-col { animation: none; }
   #cov-table tbody.is-entering { animation: none; }
 }
@@ -663,6 +708,11 @@ svg.is-playing .bt-node { opacity: 1; }
   font-size: 0.95rem;
   color: #363636;
 }
+
+/* the RL section sits on a light-grey hero, so its cards need a white fill */
+.svp-rl-steps { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.svp-rl-steps .svp-step { background: #fff; border-color: transparent; }
+.svp-rl-steps .svp-step-eq:last-child { margin-bottom: 0.2rem; }
 
 .svp-step-tag {
   font-family: 'Google Sans', sans-serif;

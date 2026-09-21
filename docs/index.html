@@ -67,7 +67,7 @@
             <span style="font-size: 0.62em; line-height: 1.3;">Unlocking RL Performance via Diverse Latent Reasoning</span>
           </h1>
           <div class="is-size-5 publication-authors">
-            <span class="author-block"><a href="https://jihwan1205.github.io/" class="author-self"><strong>Jihwan Shin</strong></a><sup>1</sup></span>,
+            <span class="author-block"><a href="https://jihwan1205.github.io/" class="author-self">Jihwan Shin</a><sup>1</sup></span>,
             <span class="author-block"><a href="https://www.linkedin.com/in/daliri-majid/">Majid Daliri</a><sup>2</sup></span>,
             <span class="author-block"><a href="https://research.google/people/mirrokni/">Vahab Mirrokni</a><sup>3</sup></span>,
             <span class="author-block"><a href="https://www.linkedin.com/in/amir-zandieh-323a13a9/">Amir Zandieh</a><sup>3</sup></span>,
@@ -137,7 +137,7 @@
           <circle cx="16" cy="45" r="6" class="ov-start"/><path id="ov-p0" d="M22 45 C90 45 130 12 214 12" class="ov-line ov-green"/><circle cx="220" cy="12" r="5" class="ov-end"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-0.00s" repeatCount="indefinite"><mpath href="#ov-p0"/></animateMotion></circle><path id="ov-p1" d="M22 45 C90 45 130 28 214 28" class="ov-line ov-green"/><circle cx="220" cy="28" r="5" class="ov-end-ok"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-0.35s" repeatCount="indefinite"><mpath href="#ov-p1"/></animateMotion></circle><path id="ov-p2" d="M22 45 C90 45 130 45 214 45" class="ov-line ov-green"/><circle cx="220" cy="45" r="5" class="ov-end"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-0.70s" repeatCount="indefinite"><mpath href="#ov-p2"/></animateMotion></circle><path id="ov-p3" d="M22 45 C90 45 130 62 214 62" class="ov-line ov-green"/><circle cx="220" cy="62" r="5" class="ov-end-ok"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-1.05s" repeatCount="indefinite"><mpath href="#ov-p3"/></animateMotion></circle><path id="ov-p4" d="M22 45 C90 45 130 78 214 78" class="ov-line ov-green"/><circle cx="220" cy="78" r="5" class="ov-end"/><circle r="3.5" class="ov-dot ov-dot-green"><animateMotion dur="2.4s" begin="-1.40s" repeatCount="indefinite"><mpath href="#ov-p4"/></animateMotion></circle>
         </svg>
         <div class="ov-figcap">16 runs, diverse paths</div>
-        <p><strong>SVP-V</strong> rescales the singular values of the attention Value projection with Gaussian noise, so every trajectory reasons differently.</p>
+        <p><strong>SVP-V</strong> introduces diversity to the latent trajectories via structured perturbation on the attention Value projection.</p>
       </div>
 
       <div class="ov-card">
@@ -186,7 +186,7 @@
           The draw is held fixed through prefill and every latent step, so each trajectory reasons with
           its own W&#771;<sub>V</sub>.</p>
           <div class="svp-step-eq">
-            \[s_i \;\longmapsto\; s_i(1+\alpha\varepsilon_i), \qquad \varepsilon_i \sim \mathcal{N}(0,1)\]
+            \[\widetilde{W}_V \;=\; \sum_{i=1}^{r} s_i(1+\alpha\varepsilon_i)\,u_i r_i^\top, \qquad \varepsilon_i \sim \mathcal{N}(0,1)\]
           </div>
           <p class="eq-caption">The only hyperparameter is \(\alpha\): the RMS size of the perturbation
           relative to the clean response, the same for every input.</p>
@@ -197,8 +197,8 @@
             <div class="svp-step-tag">Why the Value projection?</div>
             <p>Perturbing W<sub>V</sub> changes the messages attention transmits but leaves the attention
             weights untouched for a fixed input, so it still acts when attention is sharply peaked and
-            query- or key-side noise loses its effect. Empirically, W<sub>V</sub> is the best location in
-            9 of 12 structure-controlled comparisons, including all six under SVP.</p>
+            query- or key-side noise loses its effect. Empirically, W<sub>V</sub> is also the most
+            effective perturbation injection site among all the targets we compared.</p>
           </div>
           <div class="svp-step">
             <div class="svp-step-tag">Why Gaussian coefficients?</div>
@@ -229,6 +229,36 @@
               switched off</strong>: the exploration is only needed during training, and the gain stays
               in the clean model.
             </p>
+          </div>
+
+          <div class="svp-steps svp-rl-steps">
+            <div class="svp-step">
+              <div class="svp-step-tag">1. Rollouts with per-trajectory noise</div>
+              <p>Rollout \(j\) draws its own noise \(\varepsilon^{(j)} \sim \mathcal{N}(0, I)\), held fixed
+              through prefill and every latent step; the answer is then decoded with the clean
+              W<sub>V</sub> at temperature 1. Following
+              <a href="https://arxiv.org/abs/2503.20783"><strong>Dr.GRPO</strong></a>, each of the \(G\)
+              rollouts gets a centered, unnormalized advantage (\(\overline{\mathcal{R}}\) is the group's
+              mean reward), and token losses are summed without response-length normalization:</p>
+              <div class="svp-step-eq">
+                \[\mathcal{R}_j = \mathbf{1}\{o_j \text{ is correct}\}, \quad
+                  \widehat{A}_j = \mathcal{R}_j - \overline{\mathcal{R}}\]
+              </div>
+              <p>Following <a href="https://arxiv.org/abs/2503.14476"><strong>DAPO</strong></a>'s dynamic
+              sampling, we keep only groups that contain both correct and incorrect rollouts, since the
+              rest have zero advantage. SVP-V raises how often a group qualifies.</p>
+            </div>
+            <div class="svp-step">
+              <div class="svp-step-tag">2. Replay the same noise to optimize</div>
+              <p>We store \(\varepsilon^{(j)}\) with the sampled answer, replay prefill and latent
+              reasoning under the same noise, and backpropagate through it to W<sub>V</sub>. The
+              current, old, and reference policies all share that noise:</p>
+              <div class="svp-step-eq">
+                \[\rho_{j,\tau} =
+                  \frac{\pi_\theta\big(o_{j,\tau} \mid x,\, \varepsilon^{(j)},\, o_{j,&lt;\tau}\big)}
+                       {\pi_{\theta_{\mathrm{old}}}\big(o_{j,\tau} \mid x,\, \varepsilon^{(j)},\, o_{j,&lt;\tau}\big)}\]
+              </div>
+            </div>
           </div>
 
           <div class="svp-bars-card">
