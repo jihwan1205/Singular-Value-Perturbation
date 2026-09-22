@@ -586,7 +586,6 @@ table.svp-table tbody tr:last-child td {
 }
 
 .svp-branch-problem { font-size: 0.92rem; color: #363636; margin-bottom: 0.9rem; }
-.svp-branch-problem .bt-tag { font-family: 'Google Sans', sans-serif; font-size: 0.75rem; color: #999; }
 .svp-branch-problem .bt-solution { font-family: 'Google Sans', sans-serif; font-size: 0.85rem; margin-top: 0.3rem; }
 .svp-branch-problem .bt-solution b { color: #9c6f14; }
 

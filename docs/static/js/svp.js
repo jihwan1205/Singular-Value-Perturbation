@@ -332,7 +332,6 @@
 
   function showProblem(P) {
     problem = P;
-    setHTML('bt-tag', P.tag);
     var q = byId('bt-question'); if (q) q.textContent = P.question;
     setHTML('bt-solution', P.solution);
     setHTML('bt-story', P.story);
