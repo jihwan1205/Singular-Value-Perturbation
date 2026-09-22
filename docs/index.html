@@ -384,17 +384,22 @@
         <div class="content has-text-justified">
           <p>Reading the latent states through the LM head shows <em>where</em> trajectories differ.
           SVP-V does not scatter them everywhere: they agree on the easy steps and branch at the one
-          step the clean model gets wrong. There, the correct intermediate value becomes the most common
-          branch, and only SVP-V trajectories go on to the correct answer.</p>
+          step the clean model gets wrong. There, the correct intermediate value becomes reachable, and
+          only SVP-V trajectories go on to the correct answer.</p>
         </div>
 
         <div class="svp-branch-card">
+          <div class="svp-toggle" id="branch-problem" role="tablist" aria-label="Problem">
+            <button type="button" role="tab" data-problem="q334" aria-selected="true" class="is-active">GSM8K-test #334</button>
+            <button type="button" role="tab" data-problem="q397" aria-selected="false">GSM8K-test #397</button>
+            <button type="button" role="tab" data-problem="q853" aria-selected="false">GSM8K-test #853</button>
+          </div>
           <div class="svp-branch-problem">
-            <span class="bt-tag">GSM8K-test #334</span><br>
-            Nick, Richard, Jason and DJ each have paintball guns. DJ has 8 guns, Nick has 10 guns, RJ has
+            <span class="bt-tag" id="bt-tag">GSM8K-test #334</span><br>
+            <span id="bt-question">Nick, Richard, Jason and DJ each have paintball guns. DJ has 8 guns, Nick has 10 guns, RJ has
             1 gun and Richard has 5 guns. If they were to share their guns equally, how many guns would
-            each of them have?
-            <div class="bt-solution">8 + 10 + 1 + 5 = <b>24</b> &nbsp;&middot;&nbsp; 24 &divide; <b>4</b> = <b>6</b></div>
+            each of them have?</span>
+            <div class="bt-solution" id="bt-solution">8 + 10 + 1 + 5 = <b>24</b> &nbsp;&middot;&nbsp; 24 &divide; <b>4</b> = <b>6</b></div>
           </div>
 
           <div class="svp-toggle" id="branch-toggle" role="tablist" aria-label="Sampling method">
@@ -407,10 +412,11 @@
           </div>
 
           <div class="svp-branch-stats">
-            <span><b id="bt-stat-distinct">0</b>distinct readouts at h<sub>1</sub></span>
-            <span><b id="bt-stat-total">0</b>read the correct total 24</span>
-            <span><b id="bt-stat-correct">0</b>reach the correct answer 6</span>
+            <span id="bt-stat-distinct"></span>
+            <span id="bt-stat-total"></span>
+            <span id="bt-stat-correct"></span>
           </div>
+          <p class="bt-story" id="bt-story"></p>
 
           <div class="svp-branch-foot">
             <div>
@@ -422,11 +428,13 @@
           </div>
         </div>
         <p class="svp-caption">
-          LM-head top-1 readouts of the latent trajectories on one GSM8K problem, at latent depths
-          h<sub>0</sub>, h<sub>1</sub>, h<sub>3</sub> and h<sub>6</sub>; switch between a single
-          deterministic run, 16 activation-Gaussian samples and 16 SVP-V samples. Trajectories agree at
-          h<sub>0</sub> and re-converge at h<sub>3</sub>; the branching happens at h<sub>1</sub>, the step
-          the clean model gets wrong, and only SVP-V branches reach the correct answer.
+          LM-head top-1 readouts of the latent trajectories on three GSM8K-test problems where the clean
+          model is wrong and all 16 activation-Gaussian samples are wrong, while SVP-V solves 4/16 (#334),
+          3/16 (#397) and 2/16 (#853). Pick a problem and a sampling method above. The four probed depths
+          are the ones that carry a value in each problem; the shaded column is the decision-critical
+          step. The gold value there (the total 24 at h<sub>1</sub>, the per-day rate 10 at h<sub>3</sub>,
+          the half-total 900 at h<sub>4</sub>) is never read by the clean model, and only SVP-V
+          trajectories go on to the correct answer.
         </p>
       </div>
     </div>

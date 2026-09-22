@@ -154,31 +154,77 @@
 })();
 
 
-// ---- Semantic branching: animated LM-head readout tree (GSM8K-test #334).
-// Each entry is one group of trajectories: [h0, h1, h3, h6, count], the top-1
-// numeric readout at each probed latent depth.
+// ---- Semantic branching: animated LM-head readout trees (Evidence 2).
+// PROBLEMS[*].methods[*].paths — one row per group of trajectories,
+// [d0, d1, d2, d3, count]: the top-1 numeric readout at the four probed
+// latent depths (cols) and how many trajectories share that route.
 (function () {
   var host = document.getElementById('branch-tree');
   var toggle = document.getElementById('branch-toggle');
+  var ptoggle = document.getElementById('branch-problem');
   if (!host || !toggle) return;
 
-  var METHODS = {
-    det: { name: 'Deterministic', color: '#555555', paths: [[8, 22, 4, 7, 1]] },
-    agn: { name: 'Activation-Gaussian', color: '#1f77b4', paths: [
-      [8, 22, 4, 7, 7], [8, 26, 4, 7, 3], [8, 24, 4, 8, 2], [8, 24, 4, 10, 1],
-      [8, 28, 4, 8, 1], [8, 22, 4, 8, 1], [8, 26, 3, 8, 1]] },
-    svp: { name: 'SVP-V', color: '#c62828', paths: [
-      [8, 24, 4, 7, 3], [8, 24, 4, 6, 2], [8, 23, 2, 6, 1], [8, 22, 4, 6, 1],
-      [8, 16, 4, 5, 1], [8, 23, 4, 7, 1], [4, 23, 4, 7, 1], [8, 26, 4, 8, 1],
-      [8, 28, 4, 8, 1], [8, 20, 3, 7, 1], [8, 24, 4, 8, 1], [8, 23, 4, 8, 1],
-      [8, 21, 4, 5, 1]] }
-  };
-  var COLS = [['h', '0', 'first operand'], ['h', '1', 'total'], ['h', '3', 'divisor'], ['h', '6', 'answer']];
-  var GOLD = [null, 24, 4, 6];     // values on the correct solution path
-  var ANSWER = 6, CRITICAL = 1, ROW = 34, NODE_H = 24, TOP = 30, MAX_ROWS = 8;
+  var PROBLEMS = [
+    {
+      key: 'q334', tag: 'GSM8K-test #334',
+      question: 'Nick, Richard, Jason and DJ each have paintball guns. DJ has 8 guns, Nick has 10 guns, RJ has 1 gun and Richard has 5 guns. If they were to share their guns equally, how many guns would each of them have?',
+      solution: '8 + 10 + 1 + 5 = <b>24</b> &nbsp;&middot;&nbsp; 24 &divide; <b>4</b> = <b>6</b>',
+      cols: [['h', '0', 'first operand'], ['h', '1', 'total'], ['h', '3', 'divisor'], ['h', '6', 'answer']],
+      gold: [null, 24, 4, 6], answer: 6, critical: 1, critical_text: 'the correct total 24',
+      story: 'Every method reads the first operand 8 at h<sub>0</sub> and re-converges on the divisor 4 at h<sub>3</sub>. The clean model reads 22 at h<sub>1</sub> instead of the total 24 and answers 7. Three Act-Gaussian samples do read 24, but none of them answers 6. Under SVP-V, 24 becomes the most common readout at h<sub>1</sub> (6 of 16), and four trajectories go on to the answer 6.',
+      methods: {
+        det: { name: 'Deterministic', color: '#555555', paths: [[8, 22, 4, 7, 1]] },
+        agn: { name: 'Activation-Gaussian', color: '#1f77b4', paths: [
+          [8, 22, 4, 7, 7], [8, 26, 4, 7, 3], [8, 24, 4, 8, 2], [8, 24, 4, 10, 1],
+          [8, 28, 4, 8, 1], [8, 22, 4, 8, 1], [8, 26, 3, 8, 1]] },
+        svp: { name: 'SVP-V', color: '#c62828', paths: [
+          [8, 24, 4, 7, 3], [8, 24, 4, 6, 2], [8, 23, 2, 6, 1], [8, 22, 4, 6, 1],
+          [8, 16, 4, 5, 1], [8, 23, 4, 7, 1], [4, 23, 4, 7, 1], [8, 26, 4, 8, 1],
+          [8, 28, 4, 8, 1], [8, 20, 3, 7, 1], [8, 24, 4, 8, 1], [8, 23, 4, 8, 1],
+          [8, 21, 4, 5, 1]] }
+      }
+    },
+    {
+      key: 'q397', tag: 'GSM8K-test #397',
+      question: 'Mark has $50 in his bank account. He earns $10 per day at his work. If he wants to buy a bike that costs $300, how many days does Mark have to save his money?',
+      solution: '300 &minus; 50 = <b>250</b> &nbsp;&middot;&nbsp; 250 &divide; <b>10</b> = <b>25</b>',
+      cols: [['h', '0', 'target cost'], ['h', '1', 'remaining'], ['h', '3', 'per-day rate'], ['h', '6', 'answer']],
+      gold: [null, 250, 10, 25], answer: 25, critical: 2, critical_text: 'the per-day rate 10',
+      story: 'Every method reads the target cost 300 at h<sub>0</sub>. The clean model already drifts at h<sub>1</sub> (it reads 25, not the remaining 250) and then divides by the wrong number at h<sub>3</sub> — 50 instead of the $10/day rate — so it answers 30. The 16 Act-Gaussian samples never place 10 at h<sub>3</sub>. Under SVP-V the three trajectories that reach 250 → 10 are exactly the three that answer 25.',
+      methods: {
+        det: { name: 'Deterministic', color: '#555555', paths: [[300, 25, 50, 30, 1]] },
+        agn: { name: 'Activation-Gaussian', color: '#1f77b4', paths: [
+          [300, 30, 30, 30, 4], [300, 30, 0, 30, 3], [300, 30, 50, 30, 2], [300, 0, 0, 30, 1],
+          [300, 0, 30, 30, 1], [300, 1, 75, 30, 1], [300, 3, 0, 30, 1], [300, 30, 1, 30, 1],
+          [300, 30, 75, 30, 1], [300, 50, 75, 30, 1]] },
+        svp: { name: 'SVP-V', color: '#c62828', paths: [
+          [300, 30, 50, 30, 4], [300, 250, 10, 25, 3], [300, 30, 0, 30, 2], [50, 25, 50, 30, 1],
+          [50, 30, 0, 30, 1], [50, 350, 100, 35, 1], [300, 1, 333, 50, 1], [300, 25, 50, 30, 1],
+          [300, 30, 1, 30, 1], [300, 255, 30, 30, 1]] }
+      }
+    },
+    {
+      key: 'q853', tag: 'GSM8K-test #853',
+      question: 'There are 90 rooms at the KozyInn Motel. It takes housekeeping 20 minutes to clean each room. How many hours would it take to clean one-half of the rooms?',
+      solution: '90 &times; 20 = <b>1800</b> &nbsp;&middot;&nbsp; 1800 &divide; 2 = <b>900</b> &nbsp;&middot;&nbsp; 900 &divide; 60 = <b>15</b>',
+      cols: [['h', '0', 'rooms'], ['h', '1', 'total minutes'], ['h', '4', 'half'], ['h', '6', 'answer (hours)']],
+      gold: [null, 1800, 900, 15], answer: 15, critical: 2, critical_text: 'the half-total 900',
+      story: 'The total 1800 minutes is read at h<sub>1</sub> by the clean model and by most samples of both methods — that step is not the problem. The clean model then reads 30 at h<sub>4</sub> (halving the 60-minute hour instead of the total) and answers 30. No Act-Gaussian sample reads 900 at h<sub>4</sub>; one SVP-V sample does and answers 15, and a second reaches 15 from 30.',
+      methods: {
+        det: { name: 'Deterministic', color: '#555555', paths: [[90, 1800, 30, 3, 1]] },
+        agn: { name: 'Activation-Gaussian', color: '#1f77b4', paths: [
+          [90, 45, 0, 0, 3], [90, 45, 7, 7, 3], [90, 1800, 30, 3, 3], [90, 1800, 30, 30, 3],
+          [90, 1800, 3, 3, 2], [1, 45, 0, 0, 1], [90, 1800, 7, 7, 1]] },
+        svp: { name: 'SVP-V', color: '#c62828', paths: [
+          [90, 1800, 30, 3, 6], [90, 1800, 3, 3, 5], [90, 45, 22, 1, 1], [90, 45, 90, 1, 1],
+          [90, 45, 900, 15, 1], [90, 1800, 30, 5, 1], [90, 1800, 30, 15, 1]] }
+      }
+    }
+  ];
+  var ROW = 34, NODE_H = 24, TOP = 30, MAX_ROWS = 8;
   var SVG = 'http://www.w3.org/2000/svg';
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var current = 'svp', started = false, narrow = null;
+  var current = 'svp', problem = PROBLEMS[0], started = false, narrow = null;
 
   function el(name, attrs, text) {
     var e = document.createElementNS(SVG, name);
@@ -186,9 +232,12 @@
     if (text != null) e.textContent = text;
     return e;
   }
+  function byId(id) { return document.getElementById(id); }
+  function setHTML(id, h) { var e = byId(id); if (e) e.innerHTML = h; }
 
   function build(key) {
-    var m = METHODS[key];
+    var P = problem, COLS = P.cols, GOLD = P.gold, ANSWER = P.answer, CRITICAL = P.critical;
+    var m = P.methods[key];
     var W = narrow ? 400 : 740, NW = narrow ? 52 : 62;
     var PAD = 18;   // room for the axis captions under the outer columns
     var xs = COLS.map(function (_, c) { return PAD + c * (W - 2 * PAD - NW) / (COLS.length - 1); });
@@ -209,7 +258,7 @@
     });
 
     var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img',
-      'aria-label': m.name + ': LM-head readouts of ' + total + ' latent trajectories at h0, h1, h3 and h6' });
+      'aria-label': m.name + ': LM-head readouts of ' + total + ' latent trajectories, ' + P.tag });
 
     // the decision-critical column
     svg.appendChild(el('rect', { x: xs[CRITICAL] - 10, y: 4, width: NW + 20, height: H - 8, rx: 8, 'class': 'bt-critical' }));
@@ -264,11 +313,13 @@
     host.appendChild(svg);
 
     // summary numbers for the selected method
-    var h1 = cols[CRITICAL], correct = 0;
+    var crit = cols[CRITICAL], correct = 0;
     m.paths.forEach(function (p) { if (p[3] === ANSWER) correct += p[4]; });
-    document.getElementById('bt-stat-distinct').textContent = Object.keys(h1).length;
-    document.getElementById('bt-stat-total').textContent = (h1[GOLD[CRITICAL]] ? h1[GOLD[CRITICAL]].n : 0) + ' / ' + total;
-    document.getElementById('bt-stat-correct').textContent = correct + ' / ' + total;
+    var sub = 'h<sub>' + COLS[CRITICAL][1] + '</sub>';
+    setHTML('bt-stat-distinct', '<b>' + Object.keys(crit).length + '</b>distinct readouts at ' + sub);
+    setHTML('bt-stat-total', '<b>' + (crit[GOLD[CRITICAL]] ? crit[GOLD[CRITICAL]].n : 0) + ' / ' + total +
+      '</b>read ' + P.critical_text + ' at ' + sub);
+    setHTML('bt-stat-correct', '<b>' + correct + ' / ' + total + '</b>reach the correct answer ' + ANSWER);
     return svg;
   }
 
@@ -277,6 +328,15 @@
     if (reduceMotion || !started) { if (started) svg.classList.add('is-playing'); return; }
     svg.getBoundingClientRect();     // flush, so the staged transitions run
     svg.classList.add('is-playing');
+  }
+
+  function showProblem(P) {
+    problem = P;
+    setHTML('bt-tag', P.tag);
+    var q = byId('bt-question'); if (q) q.textContent = P.question;
+    setHTML('bt-solution', P.solution);
+    setHTML('bt-story', P.story);
+    play();
   }
 
   var buttons = Array.prototype.slice.call(toggle.querySelectorAll('button'));
@@ -290,14 +350,28 @@
       play();
     });
   });
-  var replay = document.getElementById('branch-replay');
+  if (ptoggle) {
+    var pbuttons = Array.prototype.slice.call(ptoggle.querySelectorAll('button'));
+    pbuttons.forEach(function (b) {
+      b.addEventListener('click', function () {
+        pbuttons.forEach(function (o) {
+          o.classList.toggle('is-active', o === b);
+          o.setAttribute('aria-selected', o === b);
+        });
+        for (var i = 0; i < PROBLEMS.length; i++) {
+          if (PROBLEMS[i].key === b.dataset.problem) showProblem(PROBLEMS[i]);
+        }
+      });
+    });
+  }
+  var replay = byId('branch-replay');
   if (replay) replay.addEventListener('click', play);
 
   function layout() {
     var n = host.clientWidth < 560;
     if (n === narrow) return;
     narrow = n;
-    play();
+    showProblem(problem);
   }
   window.addEventListener('resize', layout);
   layout();
@@ -311,7 +385,6 @@
     started = true; play();
   }
 })();
-
 
 // Smooth open/close for the <details> disclosures (abstract, full table, method cards): the
 // native toggle is instant, so animate the element's height instead.

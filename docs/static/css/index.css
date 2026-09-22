@@ -590,6 +590,7 @@ table.svp-table tbody tr:last-child td {
 .svp-branch-problem .bt-solution { font-family: 'Google Sans', sans-serif; font-size: 0.85rem; margin-top: 0.3rem; }
 .svp-branch-problem .bt-solution b { color: #9c6f14; }
 
+#branch-problem button.is-active { background: #363636; border-color: #363636; }
 #branch-toggle button[data-method="det"].is-active { background: #555; border-color: #555; }
 #branch-toggle button[data-method="agn"].is-active { background: #1f77b4; border-color: #1f77b4; }
 
@@ -618,6 +619,8 @@ table.svp-table tbody tr:last-child td {
 
 svg.is-playing .bt-edge { stroke-dashoffset: 0; }
 svg.is-playing .bt-node { opacity: 1; }
+
+.bt-story { font-size: 0.86rem; color: #4a4a4a; margin: 0.8rem 0 0; line-height: 1.55; }
 
 .svp-branch-stats {
   display: flex;
