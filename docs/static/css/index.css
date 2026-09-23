@@ -870,6 +870,13 @@ svg.is-playing .bt-node { opacity: 1; }
 .ov-dot { fill: #777; }
 .ov-dot-green { fill: #c62828; }
 
+/* Σ block at the fork: singular values on the diagonal, redrawn for every SVP-V trajectory */
+.ov-off { fill: #fff; stroke: #e3e3e3; stroke-width: 0.5; }
+.ov-sig { fill: #9a9a9a; stroke: #fff; stroke-width: 0.5; }
+.ov-sig-svp { fill: #c62828; }
+.ov-frame { fill: none; stroke: #9a9a9a; stroke-width: 1; }
+.ov-frame-svp { stroke: #c62828; }
+
 .ov-bars { display: flex; justify-content: center; align-items: flex-end; gap: 1.6rem; }
 .ov-bar {
   height: 100%;
