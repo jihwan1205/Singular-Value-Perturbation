@@ -21,16 +21,25 @@
   }
   function stage(n, parent) { return el('g', { 'class': 'mf-s', 'data-s': n }, null, parent); }
 
-  // text with optional subscript: label('h', 'T-1')
+  // text with optional subscript, set in TeX fonts: math('h', 'T-1').
+  // Letters are italic; digits, operators and anything with rm: true are upright.
   function math(x, y, base, sub, parent, attrs) {
-    var a = { x: x, y: y, 'text-anchor': 'middle', 'class': 'mf-math' };
-    for (var k in attrs || {}) a[k] = attrs[k];
+    attrs = attrs || {};
+    var a = { x: x, y: y, 'text-anchor': 'middle', 'class': 'mf-math' + (attrs.rm ? ' mf-rm' : '') };
+    for (var k in attrs) if (k !== 'rm') a[k] = attrs[k];
     var t = el('text', a, null, parent);
     // a trailing transpose mark is set as a raised, upright superscript
     var sup = base.slice(-1) === '\u22a4';
     el('tspan', {}, sup ? base.slice(0, -1) : base, t);
-    if (sup) el('tspan', { dy: -7, dx: 1, 'font-size': '0.6em', 'font-style': 'normal' }, '\u22a4', t);
-    if (sub) el('tspan', { dy: 4, 'font-size': '0.68em' }, sub, t);
+    if (sup) el('tspan', { dy: -8, dx: 1, 'font-size': '0.6em', 'class': 'mf-rm' }, '\u22a4', t);
+    if (sub) {
+      (sub.match(/[A-Za-z]+|[^A-Za-z]+/g) || []).forEach(function (run, i) {
+        var s = { 'font-size': '0.68em' };
+        if (i === 0) s.dy = 4;
+        if (!/[A-Za-z]/.test(run)) s['class'] = 'mf-rm';
+        el('tspan', s, run, t);
+      });
+    }
     return t;
   }
   function token(x, y, style, parent, dashed) {
@@ -114,10 +123,10 @@
   el('rect', { x: 10, y: 362, width: 418, height: 192, rx: 8, fill: '#fcf5f4', stroke: '#d9534f', 'stroke-width': 1.2 });
   var g9 = stage(9); math(72, My - 10, 'W', 'V', g9); grid(30, My, 6, 8, red, g9);
   var g10 = stage(10);
-  el('text', { x: 146, y: My + 48, 'text-anchor': 'middle', 'class': 'mf-math', 'font-size': 14 }, 'SVD', g10);
+  el('text', { x: 146, y: My + 48, 'text-anchor': 'middle', 'class': 'mf-math mf-rm', 'font-size': 14 }, 'SVD', g10);
   el('path', { d: 'M126 ' + (My + 58) + ' h32 m-7 -5 l8 5 l-8 5', 'class': 'mf-garrow' }, null, g10);
   math(210, My - 10, 'U', null, g10); grid(182, My, RANK, 8, redF, g10);
-  math(280, My + 18, 'Σ', null, g10, { 'font-style': 'normal' }); grid(252, My + 28, RANK, RANK, { fill: RED_FILL, line: RED, frame: RED, diag: true }, g10);
+  math(280, My + 18, 'Σ', null, g10, { rm: true }); grid(252, My + 28, RANK, RANK, { fill: RED_FILL, line: RED, frame: RED, diag: true }, g10);
   math(364, My + 18, 'R⊤', null, g10); grid(322, My + 28, 6, RANK, redF, g10);
 
   var g11 = stage(11);
@@ -125,7 +134,7 @@
   math(526, My - 10, 'U', null, g11); grid(498, My, RANK, 8, redF, g11);
   math(762, My + 18, 'R⊤', null, g11); grid(720, My + 28, 6, RANK, redF, g11);
   el('rect', { x: 566, y: 330, width: 140, height: 224, rx: 6, fill: '#f7f4fb', stroke: PURPLE, 'stroke-width': 1.2 }, null, g11);
-  math(606, 352, 'Σ', null, g11, { 'font-style': 'normal' }); grid(578, 360, RANK, RANK, { fill: RED_FILL, line: RED, frame: RED, diag: true }, g11);
+  math(606, 352, 'Σ', null, g11, { rm: true }); grid(578, 360, RANK, RANK, { fill: RED_FILL, line: RED, frame: RED, diag: true }, g11);
   el('text', { x: 636, y: 576, 'text-anchor': 'middle', 'class': 'mf-note' }, 'Gaussian noise on singular values', g11);
 
   var g12 = stage(12);
@@ -140,8 +149,9 @@
 
   var g14 = stage(14);
   el('text', { x: 836, y: My + 72, 'text-anchor': 'middle', 'class': 'mf-op' }, '=', g14);
-  var wt = el('text', { x: 912, y: My - 10, 'text-anchor': 'middle', 'class': 'mf-math' }, null, g14);
-  el('tspan', {}, 'W̃', wt); el('tspan', { dy: 4, 'font-size': '0.68em' }, 'V', wt);
+  // W with a tilde accent: the TeX italic face has no precomposed W-tilde
+  math(912, My - 10, 'W', 'V', g14);
+  el('text', { x: 909, y: My - 14, 'text-anchor': 'middle', 'class': 'mf-math mf-rm' }, '\u02dc', g14);
   var outCells = grid(870, My, 6, 8, { fill: PURPLE, line: '#8f7bb3' }, g14);
 
   // ------------------------------------------------ noise draw

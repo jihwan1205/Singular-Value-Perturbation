@@ -565,6 +565,22 @@ table.svp-table tbody tr:last-child td {
   .svp-vbars .bar { width: 80%; }
   .svp-vbars .bar-value { font-size: 0.72rem; }
   .svp-vbars .bar-label { font-size: 0.62rem; }
+  /* eight bars do not fit a phone: keep the labels whole and let the chart scroll sideways */
+  .svp-bars-card { overflow-x: auto; }
+  .show-ablation .svp-vbars { min-width: 33rem; }
+  .show-ablation .svp-vbars .bar-label { white-space: nowrap; overflow-wrap: normal; }
+}
+
+/* ------------------------------------------------ phone-width type */
+@media (max-width: 600px) {
+  .title.is-1.publication-title { font-size: 2.1rem; }   /* outranks Bulma's .title.is-1 */
+  .svp-tldr { font-size: 1.15rem; }
+  .svp-tldr br { display: none; }
+  .title.is-3 { font-size: 1.6rem; }
+  .title.is-4 { font-size: 1.3rem; }
+  /* justified text leaves rivers in narrow columns */
+  .content.has-text-justified, .has-text-justified { text-align: left !important; }
+  #mech-fig svg { min-width: 560px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -654,6 +670,7 @@ svg.is-playing .bt-node { opacity: 1; }
   display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px;
   margin-right: 0.35rem; vertical-align: -0.1rem; box-sizing: border-box;
 }
+.svp-branch-foot > div span { display: inline-block; }   /* wrap legend items whole */
 .svp-branch-foot span + span { margin-left: 0.9rem; }
 #branch-replay {
   font-size: 0.75rem; padding: 0.2rem 0.7rem; border: 1px solid #d0d0d0;
@@ -679,7 +696,20 @@ svg.is-playing .bt-node { opacity: 1; }
 .mf-title { font: 400 19px 'Google Sans', sans-serif; fill: #222; }
 .mf-side, .mf-tok, .mf-note { font: 400 14px 'Google Sans', sans-serif; fill: #222; }
 .mf-tok-b { font: 700 15px 'Google Sans', sans-serif; fill: #222; }
-.mf-math { font: italic 400 17px 'Google Sans', sans-serif; fill: #111; }
+/* TeX faces for the figure's math labels, from the same CDN MathJax already loads them from.
+   The italic face is italic by design, so font-style stays normal (italic would slant it twice). */
+@font-face {
+  font-family: 'SVP TeX Italic';
+  src: url('https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Math-Italic.woff') format('woff');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SVP TeX';
+  src: url('https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2/MathJax_Main-Regular.woff') format('woff');
+  font-display: swap;
+}
+.mf-math { font: 400 18px 'SVP TeX Italic', 'Latin Modern Math', 'STIX Two Math', 'Times New Roman', serif; fill: #111; }
+.mf-math.mf-rm, .mf-math .mf-rm { font-family: 'SVP TeX', 'Latin Modern Math', 'STIX Two Math', 'Times New Roman', serif; font-style: normal; }
 .mf-lrm { font: 400 30px 'Google Sans', sans-serif; fill: #fff; }
 .mf-dots { font: 700 18px 'Google Sans', sans-serif; fill: #6b7280; }
 .mf-op { font: 300 40px 'Google Sans', sans-serif; fill: #111; }
@@ -800,14 +830,14 @@ svg.is-playing .bt-node { opacity: 1; }
 
 .svp-overview {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
 }
 
 .ov-card {
   border: 1px solid #e6e6e6;
   border-radius: 10px;
-  padding: 1.1rem 1.2rem 1.2rem;
+  padding: 0.9rem 1rem 1rem;
   background: #fff;
 }
 
@@ -822,15 +852,15 @@ svg.is-playing .bt-node { opacity: 1; }
 
 .ov-title {
   font-family: 'Google Sans', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.02rem;
   font-weight: 600;
   color: #222;
-  margin: 0.15rem 0 0.7rem;
+  margin: 0.1rem 0 0.55rem;
 }
 
-.ov-fig { display: block; width: 100%; height: 6.5rem; }
-.ov-figcap { text-align: center; font-size: 0.75rem; color: #888; margin: 0.2rem 0 0.7rem; }
-.ov-card p { font-size: 0.92rem; color: #4a4a4a; }
+.ov-fig { display: block; width: 100%; height: 5.6rem; }
+.ov-figcap { text-align: center; font-size: 0.72rem; color: #888; margin: 0.15rem 0 0.55rem; }
+.ov-card p { font-size: 0.88rem; color: #4a4a4a; }
 
 .ov-line { fill: none; stroke: #c9c9c9; stroke-width: 2; }
 .ov-line.ov-green { stroke: #eaa9a3; }
