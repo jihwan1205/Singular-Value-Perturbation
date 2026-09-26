@@ -64,8 +64,8 @@ iteration, learning rate `6e-5`, seed `0`, and the epoch-9 checkpoint of a
 
 The linked SVP-V-GRPO checkpoint is the `B = 32`, `lr = 6e-5`, seed-0 paper run.
 The included `configs/grpo_coconut_gpt2.json` instead specifies a separate
-`B = 8`, `lr = 3e-5`, seed-1, 10-epoch example. Its 50.5% GSM8K result is not
-the checkpoint or matched comparison reported in Figure 3.
+`B = 8`, `lr = 3e-5`, seed-1, 10-epoch example. That configuration does not
+produce the checkpoint or matched comparison reported in Figure 3.
 
 [`temp-v-coconut-gpt2`](https://huggingface.co/jihwan1205/temp-v-coconut-gpt2) is the
 token-sampling checkpoint of that ablation (the epoch-9 row above).
