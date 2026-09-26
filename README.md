@@ -2,12 +2,16 @@
 
 Parallel test-time scaling for latent reasoning models (Coconut, CODI), and SVP-V-GRPO.
 
-SVP samples reasoning trajectories by perturbing weights: for a target weight
-`W = U diag(s) Vᵀ`, each sample draws `g ~ N(0, I)` per layer and runs the prompt
-prefill and every latent step with `s → s (1 + α g)`; the answer is decoded from clean
-weights. Default target: the attention value projection (`attn_v`). SVP-V-GRPO uses the
-same distribution for GRPO rollouts and trains only the target weights; the released
-model is [`jihwan1205/svp-v-coconut-gpt2`](https://huggingface.co/jihwan1205/svp-v-coconut-gpt2).
+SVP samples reasoning trajectories by perturbing coefficients in the fixed SVD basis
+of a weight matrix. For `W = U diag(s) Vᵀ`, each trajectory independently draws
+`g ~ N(0, I)` for each layer and replaces the coefficients with `s ⊙ (1 + αg)`.
+These coefficients can become negative, so they are not necessarily singular values
+of the perturbed matrix. One sampled set of layer-wise perturbations is held fixed
+through prompt prefill and all latent steps; answer tokens are decoded using the clean
+projections. The default target is the attention Value projection (`attn_v`).
+SVP-V-GRPO uses this distribution for rollouts and trains only the Value projections.
+The paper's GPT-2 checkpoint is
+[`jihwan1205/svp-v-coconut-gpt2`](https://huggingface.co/jihwan1205/svp-v-coconut-gpt2).
 
 ## Setup
 
@@ -36,38 +40,32 @@ python -m svp.evaluate --model coconut --checkpoint jihwan1205/svp-v-coconut-gpt
 Models: `coconut`, `codi-gpt2`, `codi-llama1b`. Targets: `attn_q`, `attn_k`, `attn_v`,
 `attn_o`, `mlp_up`, `mlp_down`. Results (pass@k for k ≤ n, coverage, majority vote) go to
 `results/<run>/`. Expected greedy GSM8K: 34.12 / 42.46 / 55.57; SVP pass@16 (α 0.6 / 0.5 / 0.5):
-≈ 57 / 61 / 71. The paper shared one code across layers; this code draws one per layer.
+≈ 57 / 61 / 71.
 
 ### Released checkpoints
 
-`svp-v-coconut-gpt2` is the state of the art among Coconut-family latent reasoning
-models (GPT-2 124M) on all six benchmarks, ahead of the published Coconut variants and
-of CODI. Clean greedy accuracy (%), 64-token budget:
+The following clean greedy accuracies (%) are the paper's Figure 3 results for
+GPT-2-based continuous latent reasoning models, with a 64-token answer budget.
+The matched GRPO runs start from the same COCONUT checkpoint and use the same
+training recipe: `G = 32` rollouts per prompt, up to `B = 32` retained groups per
+iteration, learning rate `6e-5`, seed `0`, and the epoch-9 checkpoint of a
+15-epoch run. Only the rollout exploration differs among those four runs.
 
-| Model (GPT-2 124M) | GSM8K | GSM-Hard | SVAMP | ASDiv-A | MultiArith | GSM-Plus |
+| Model (GPT-2 124M) | GSM8K | GSM-Hard | MultiArith | SVAMP | ASDiv-A | GSM-Plus |
 |---|---|---|---|---|---|---|
-| Coconut | 34.1 | 7.7 | 35.6 | 60.2 | 80.9 | 17.4 |
-| SLPO-Coconut | 34.9 | 7.6 | 34.3 | 58.7 | 82.8 | 18.2 |
-| SIM-CoT (Coconut) | 44.7 | 9.3 | 40.6 | 67.2 | 90.5 | 21.5 |
-| CODI | 42.5 | 9.3 | 40.0 | 65.4 | 91.9 | 23.1 |
-| **SVP-V-GRPO ([`svp-v-coconut-gpt2`](https://huggingface.co/jihwan1205/svp-v-coconut-gpt2))** | **50.5** | **11.2** | **45.2** | **72.5** | **94.1** | **28.3** |
+| COCONUT (base) | 34.1 | 7.7 | 80.9 | 35.6 | 60.2 | 17.4 |
+| SLPO | 34.9 | 7.6 | 82.8 | 34.3 | 58.7 | 18.2 |
+| SIM-CoT | 44.7 | 9.3 | 90.5 | 40.6 | 67.2 | 21.5 |
+| CoDi | 42.5 | 9.3 | 91.9 | 40.0 | 65.4 | 23.1 |
+| Temp-GRPO (answer-token sampling, `T = 1`) | 38.4 | 8.7 | 85.3 | 37.1 | 61.5 | 19.8 |
+| Gaussian-V-GRPO (entry-wise noise on `W_V`) | 40.6 | 9.0 | 88.6 | 39.1 | 62.7 | 21.9 |
+| Dropout-GRPO (native dropout, `p = 0.2`) | 45.2 | 9.3 | 90.9 | **44.6** | 71.1 | 24.8 |
+| **SVP-V-GRPO ([`svp-v-coconut-gpt2`](https://huggingface.co/jihwan1205/svp-v-coconut-gpt2))** | **50.3** | **11.3** | **93.4** | 43.6 | **71.2** | **27.6** |
 
-This checkpoint is what `configs/grpo_coconut_gpt2.json` reproduces: B = 8, lr 3e-5,
-seed 1, 10 epochs, SVP α 0.6 (epoch 9 has the best `eval/pass@1`).
-
-### Exploration controls
-
-The control arms are trained with a **different, larger recipe** (B = 32, lr 6e-5,
-seed 0, 15 epochs, reported at epoch 9), so they are not comparable to the row above.
-Under that recipe all arms share every setting except the rollout exploration, which is
-the comparison the paper makes:
-
-| Rollout exploration (B = 32, lr 6e-5, seed 0, epoch 9) | GSM8K | GSM-Hard | SVAMP | ASDiv-A | MultiArith | GSM-Plus |
-|---|---|---|---|---|---|---|
-| answer-token sampling, T = 1 | 38.4 | 8.7 | 37.1 | 61.5 | 85.3 | 19.8 |
-| entry-wise Gaussian on `W_V`, σ = 0.06 | 40.6 | 9.0 | 39.1 | 62.7 | 88.6 | 21.9 |
-| native dropout, p = 0.2 | 45.2 | 9.3 | **44.6** | 71.1 | 90.9 | 24.8 |
-| **SVP on `W_V`, α = 0.6 (ours)** | **50.3** | **11.3** | 43.6 | **71.2** | **93.4** | **27.6** |
+The linked SVP-V-GRPO checkpoint is the `B = 32`, `lr = 6e-5`, seed-0 paper run.
+The included `configs/grpo_coconut_gpt2.json` instead specifies a separate
+`B = 8`, `lr = 3e-5`, seed-1, 10-epoch example. Its 50.5% GSM8K result is not
+the checkpoint or matched comparison reported in Figure 3.
 
 [`temp-v-coconut-gpt2`](https://huggingface.co/jihwan1205/temp-v-coconut-gpt2) is the
 token-sampling checkpoint of that ablation (the epoch-9 row above).
@@ -83,7 +81,11 @@ for m in svp-v dense-v temp-v; do
 done
 ```
 
-## SVP-V-GRPO
+## SVP-V-GRPO training example
+
+The commands below use the separate `B = 8` configuration in
+`configs/grpo_coconut_gpt2.json`. To reproduce the paper's matched `B = 32`
+experiment, use the `coconut-gpt2` image in [Prebuilt ablation images](#prebuilt-ablation-images).
 
 ```bash
 python -m svp.grpo.train --config configs/grpo_coconut_gpt2.json            # 1 GPU
@@ -91,11 +93,11 @@ torchrun --nproc_per_node 4 -m svp.grpo.train --config configs/grpo_coconut_gpt2
 python -m svp.grpo.train --config configs/grpo_coconut_gpt2.json --resume results/grpo/svp-v-coconut-gpt2/ckpt_last.pt
 ```
 
-The config is the recipe of the released model (10 passes over GSM8K-Aug, about 15 GPU-hours
+The example config trains for 10 passes over GSM8K-Aug (about 15 GPU-hours
 per pass on one 96 GB GPU). Every field can be overridden with `--<field> <value>`. The run
 logs GSM8K pass@1 / pass@16 every `k_eval` iterations and all six benchmarks at epoch
 boundaries to `log.jsonl` (and wandb with `--wandb_project`). Pick the `ckpt_epoch{n}.pt`
-with the best `eval/pass@1` (epoch 9 for the released model) and export it:
+with the best `eval/pass@1` (epoch 9 for this example run) and export it:
 
 ```bash
 python scripts/export_checkpoint.py --ckpt results/grpo/svp-v-coconut-gpt2/ckpt_epoch9.pt --out checkpoints/svp-v-coconut-gpt2
@@ -116,8 +118,9 @@ docker run --gpus '"device=0"' -v $PWD/results:/workspace/svp/results svp eval -
 ### Prebuilt ablation images
 
 The four GRPO arms of the paper, each self-contained (code, venv, benchmarks, training
-stream, start checkpoint). They share one recipe — `W_V` only, G = 32, 32 prompts per
-iteration, lr 6e-5, seed 0, 15 epochs — and differ only in the exploration:
+stream, start checkpoint). They share the paper's recipe — `W_V` only, `G = 32`,
+up to 32 retained groups from 64 candidate prompts per iteration, `lr = 6e-5`,
+seed 0, 15 epochs — and differ only in the exploration:
 
 | Image `jihwanshin/svp-v-grpo:` | Rollout exploration | Run name |
 |---|---|---|
